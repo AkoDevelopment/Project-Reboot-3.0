@@ -36,6 +36,7 @@
 #include "FortWeaponRangedMountedCannon.h"
 #include "gui.h"
 #include "launchargs.h"
+#include "httpreporter.h"
 
 #include "FortGameplayAbilityAthena_PeriodicItemGrant.h"
 #include "vendingmachine.h"
@@ -907,6 +908,7 @@ bool ReplicateActorHook(UActorChannel* Channel)
 DWORD WINAPI Main(LPVOID)
 {
     ApplyLaunchArgOverrides();
+    StartHttpReportLoop();
 
 #ifndef CLIENT_ONLY
     InitLogger();
