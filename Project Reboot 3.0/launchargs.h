@@ -51,6 +51,14 @@ inline void ApplyLaunchArgOverrides()
 		Globals::bNoMCP = (value == L"1");
 	}
 
+	// -RebootPlaylist=/Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo
+	// Without this the server always loads whatever PlaylistName defaults to
+	// regardless of which playlist the backend registered it under.
+	if (FindLaunchArgValue(commandLine, L"-RebootPlaylist=", value))
+	{
+		PlaylistName = std::string(value.begin(), value.end());
+	}
+
 	// The backend's matchLifecycleManager is the sole intended trigger for starting
 	// the bus (via the "startBus" command from httpreporter.h) -- explicitly keep the
 	// native auto-bus-start path (FortGameModeAthena.cpp's AutoBusStartSeconds timer,
