@@ -35,6 +35,7 @@
 #include "FortPlayerPawnAthena.h"
 #include "FortWeaponRangedMountedCannon.h"
 #include "gui.h"
+#include "launchargs.h"
 
 #include "FortGameplayAbilityAthena_PeriodicItemGrant.h"
 #include "vendingmachine.h"
@@ -905,6 +906,8 @@ bool ReplicateActorHook(UActorChannel* Channel)
 
 DWORD WINAPI Main(LPVOID)
 {
+    ApplyLaunchArgOverrides();
+
 #ifndef CLIENT_ONLY
     InitLogger();
 
