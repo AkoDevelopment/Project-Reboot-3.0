@@ -50,4 +50,11 @@ inline void ApplyLaunchArgOverrides()
 	{
 		Globals::bNoMCP = (value == L"1");
 	}
+
+	// The backend's matchLifecycleManager is the sole intended trigger for starting
+	// the bus (via the "startBus" command from httpreporter.h) -- explicitly keep the
+	// native auto-bus-start path (FortGameModeAthena.cpp's AutoBusStartSeconds timer,
+	// gated on Globals::bAutoRestart) off so it can never race the backend's countdown,
+	// regardless of future UI/default changes. It is already false by default today.
+	Globals::bAutoRestart = false;
 }
