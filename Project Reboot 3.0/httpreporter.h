@@ -163,8 +163,40 @@ inline void ExecuteBackendCommand(const std::string& command)
 	if (command == "startBus")
 	{
 		LOG_INFO(LogDev, "[ProjectOcean] Backend commanded startBus");
+
 		auto GameMode = Cast<AFortGameModeAthena>(GetWorld()->GetGameMode());
-		if (GameMode) GameMode->StartAircraftPhase();
+		if (!GameMode) return;
+
+		auto GameState = Cast<AFortGameStateAthena>(GameMode->GetGameState());
+		if (!GameState) return;
+
+		bStartedBus = true;
+		AmountOfPlayersWhenBusStart = GameState->GetPlayersLeft();
+
+		if (Globals::bLateGame.load())
+		{
+			// LateGameThread already calls StartAircraftPhase() itself once it's
+			// repositioned the aircraft over the shrunk zone -- this is the same
+			// immediate trigger the ImGui "Start Bus" button uses for lategame.
+			CreateThread(0, 0, LateGameThread, 0, 0, 0);
+		}
+		else
+		{
+			// Same as the ImGui "Start Bus Countdown" button: this sets up a real
+			// 10s native countdown instead of an instant StartAircraftPhase() call,
+			// so players see the same "match starting in 10..." countdown a human
+			// clicking the button would have produced.
+			static auto WarmupCountdownEndTimeOffset = GameState->GetOffset("WarmupCountdownEndTime");
+			static auto WarmupCountdownDurationOffset = GameMode->GetOffset("WarmupCountdownDuration");
+			static auto WarmupEarlyCountdownDurationOffset = GameMode->GetOffset("WarmupEarlyCountdownDuration");
+
+			float TimeSeconds = GameState->GetServerWorldTimeSeconds();
+			float Duration = 10;
+
+			GameState->Get<float>(WarmupCountdownEndTimeOffset) = TimeSeconds + Duration;
+			GameMode->Get<float>(WarmupCountdownDurationOffset) = Duration;
+			GameMode->Get<float>(WarmupEarlyCountdownDurationOffset) = Duration;
+		}
 	}
 	else if (command == "restart")
 	{

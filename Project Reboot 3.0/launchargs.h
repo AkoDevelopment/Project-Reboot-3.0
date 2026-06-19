@@ -69,4 +69,13 @@ inline void ApplyLaunchArgOverrides()
 		try { Globals::OverrideListenPort = std::stoi(value); }
 		catch (...) {}
 	}
+
+	// -RebootLategame=1 -- same effect as ticking the "Lategame" checkbox in the ImGui
+	// UI (see SetIsLategame in gui.h): spawns everyone straight into a shrunk zone with
+	// guns/materials/shield already in their inventory once the bus "starts", instead
+	// of the normal falling-from-the-bus sequence.
+	if (FindLaunchArgValue(commandLine, L"-RebootLategame=", value))
+	{
+		SetIsLategame(value == L"1");
+	}
 }
