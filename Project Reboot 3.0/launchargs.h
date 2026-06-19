@@ -58,4 +58,15 @@ inline void ApplyLaunchArgOverrides()
 	{
 		PlaylistName = std::string(value.begin(), value.end());
 	}
+
+	// -RebootPort=7778 -- without this, UWorld::Listen() picks its own port via an
+	// internal counter that's only meant to differentiate restarts within the same
+	// process, not separate concurrent processes (see World.cpp). Every freshly
+	// spawned instance would otherwise land on the same port regardless of how many
+	// others are already running.
+	if (FindLaunchArgValue(commandLine, L"-RebootPort=", value))
+	{
+		try { Globals::OverrideListenPort = std::stoi(value); }
+		catch (...) {}
+	}
 }

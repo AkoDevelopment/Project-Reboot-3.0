@@ -26,6 +26,13 @@ namespace Globals
 	extern inline bool bPrivateIPsAreOperator = true;
 	extern inline int AmountOfListens = 0; // TODO: Switch to this for LastNum
 	extern inline bool bDeveloperMode = false;
+
+	// Set via -RebootPort=<port> (see launchargs.h). When >0, UWorld::Listen() binds
+	// this exact port instead of its own AmountOfListens-based formula -- that formula
+	// only differentiates restarts within the same process, not separate concurrent
+	// processes, so every freshly spawned instance computes the same port regardless
+	// of how many others are already running.
+	extern inline int OverrideListenPort = 0;
 }
 
 extern inline int NumToSubtractFromSquadId = 0; // I think 2?

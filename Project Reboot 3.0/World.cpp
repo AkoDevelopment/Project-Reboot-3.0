@@ -21,7 +21,9 @@ void UWorld::Listen()
 
 	constexpr bool bUseBeacons = true;
 
-	int Port = 7777 - Globals::AmountOfListens + 1;
+	int Port = Globals::OverrideListenPort > 0
+		? Globals::OverrideListenPort
+		: (7777 - Globals::AmountOfListens + 1);
 
 	if (bUseBeacons)
 	{
@@ -94,7 +96,7 @@ void UWorld::Listen()
 		NewNetDriver->GetMaxClientRate() = NewNetDriver->GetMaxInternetClientRate();
 	}
 
-	LOG_INFO(LogNet, "Listening on port {}!", Port + Globals::AmountOfListens - 1);
+	LOG_INFO(LogNet, "Listening on port {}!", Globals::OverrideListenPort > 0 ? Globals::OverrideListenPort : (Port + Globals::AmountOfListens - 1));
 }
 
 AWorldSettings* UWorld::GetWorldSettings(const bool bCheckStreamingPersistent, const bool bChecked) const
