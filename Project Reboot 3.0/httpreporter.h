@@ -99,7 +99,7 @@ inline std::string ExtractCommand(const std::string& json)
 	return json.substr(firstQuote + 1, secondQuote - firstQuote - 1);
 }
 
-inline std::string SendStatusReport(int playerCount, int aliveCount, const std::string& phase)
+inline std::string SendStatusReport(int playerCount, int aliveCount, const std::string& phase, bool joinable)
 {
 	HINTERNET hSession = WinHttpOpen(L"ProjectOceanReporter/1.0",
 		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
@@ -126,8 +126,8 @@ inline std::string SendStatusReport(int playerCount, int aliveCount, const std::
 	}
 
 	std::string body = std::format(
-		"{{\"serverId\":\"{}\",\"playerCount\":{},\"aliveCount\":{},\"phase\":\"{}\"}}",
-		WideToUtf8(GReportServerId), playerCount, aliveCount, phase);
+		"{{\"serverId\":\"{}\",\"playerCount\":{},\"aliveCount\":{},\"phase\":\"{}\",\"joinable\":{}}}",
+		WideToUtf8(GReportServerId), playerCount, aliveCount, phase, joinable ? "true" : "false");
 
 	std::wstring headers = L"Content-Type: application/json\r\nX-Internal-Secret: " + GReportSecret;
 
@@ -193,8 +193,9 @@ inline DWORD WINAPI HttpReportLoop(LPVOID)
 			int playerCount = World->GetNetDriver() ? World->GetNetDriver()->GetClientConnections().Num() : 0;
 			int aliveCount = GameState->GetPlayersLeft();
 			std::string phase = GamePhaseStepToString(GameState->GetGamePhaseStep());
+			bool joinable = Globals::bStartedListening;
 
-			std::string command = SendStatusReport(playerCount, aliveCount, phase);
+			std::string command = SendStatusReport(playerCount, aliveCount, phase, joinable);
 			ExecuteBackendCommand(command);
 		}
 		catch (...)
