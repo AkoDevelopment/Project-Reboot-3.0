@@ -205,35 +205,56 @@ inline void ExecuteBackendCommand(const std::string& command)
 	}
 }
 
+// Project Ocean: split out of HttpReportLoop so the __try/__except wrapper around
+// it doesn't have to share a stack frame with C++ objects that need destructor
+// unwinding (MSVC requires that separation when mixing SEH and C++ exceptions
+// under /EHsc -- see error C2712).
+inline void TickReportOnce()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	auto GameMode = Cast<AFortGameModeAthena>(World->GetGameMode());
+	if (!GameMode) return;
+
+	auto GameState = GameMode->GetGameStateAthena();
+	if (!GameState) return;
+
+	int playerCount = World->GetNetDriver() ? World->GetNetDriver()->GetClientConnections().Num() : 0;
+	int aliveCount = GameState->GetPlayersLeft();
+	std::string phase = GamePhaseStepToString(GameState->GetGamePhaseStep());
+	bool joinable = Globals::bStartedListening;
+
+	std::string command = SendStatusReport(playerCount, aliveCount, phase, joinable);
+
+	try
+	{
+		ExecuteBackendCommand(command);
+	}
+	catch (...)
+	{
+		// Keep the loop alive even if a single report cycle fails (e.g. transient
+		// network error).
+	}
+}
+
 inline DWORD WINAPI HttpReportLoop(LPVOID)
 {
 	while (true)
 	{
 		Sleep(GReportIntervalMs);
 
-		try
+		// World/GameMode/GameState can be transiently invalid during level load or
+		// seamless travel -- catch(...) alone does NOT catch the access violation
+		// that follows; __except does. See comment on TickReportOnce for why this
+		// needs to be a separate call rather than inlined here.
+		__try
 		{
-			UWorld* World = GetWorld();
-			if (!World) continue;
-
-			auto GameMode = Cast<AFortGameModeAthena>(World->GetGameMode());
-			if (!GameMode) continue;
-
-			auto GameState = GameMode->GetGameStateAthena();
-			if (!GameState) continue;
-
-			int playerCount = World->GetNetDriver() ? World->GetNetDriver()->GetClientConnections().Num() : 0;
-			int aliveCount = GameState->GetPlayersLeft();
-			std::string phase = GamePhaseStepToString(GameState->GetGamePhaseStep());
-			bool joinable = Globals::bStartedListening;
-
-			std::string command = SendStatusReport(playerCount, aliveCount, phase, joinable);
-			ExecuteBackendCommand(command);
+			TickReportOnce();
 		}
-		catch (...)
+		__except (EXCEPTION_EXECUTE_HANDLER)
 		{
-			// Keep the loop alive even if a single report cycle fails (e.g. transient
-			// network error, or GameState not ready yet during early startup).
+			// Skip this tick and try again next interval.
 		}
 	}
 
